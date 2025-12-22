@@ -8,7 +8,7 @@ function MainLayout() {
   return (
     <div>
       <nav className="bg-white border-b p-4 flex gap-4">
-        <span className="font-bold text-xl">My Brand</span>
+        <span className="font-bold text-xl">pp</span>
         <div className="flex gap-4">
           <Link to="/">Home</Link>
           <Link to="/about">About</Link>
