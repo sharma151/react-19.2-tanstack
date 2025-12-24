@@ -1,9 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react"; // Removed useEffect!
-import { fetchAdviceById, fetchAdviceByMood } from "../../../api/adviceApi";
+import { fetchAdviceById, fetchAdviceByMood } from "@/api/adviceApi"; // Note the '@' alias
+import { SearchInput } from "@/components/common/SearchInput"; // Use our new component
 
-// 1. Types
+// Import Shadcn Card components for layout
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+// 1. Types & Validation (Same as before)
 type ServiceSearch = {
   adviceId?: string;
   mood?: string;
@@ -20,11 +29,10 @@ export const Route = createFileRoute("/_main/services/")({
 });
 
 function ServicesPage() {
-  // 2. Get URL State
   const { adviceId, mood } = Route.useSearch();
   const navigate = Route.useNavigate();
 
-  // 3. QUERIES (Driven by URL)
+  // 2. Queries
   const idQuery = useQuery({
     queryKey: ["advice", "id", adviceId],
     queryFn: () => fetchAdviceById(adviceId!),
@@ -39,7 +47,7 @@ function ServicesPage() {
     retry: false,
   });
 
-  // 4. Update function
+  // 3. Update URL Helper
   const updateSearch = (newParams: ServiceSearch) => {
     navigate({
       search: (prev) => ({ ...prev, ...newParams }),
@@ -47,86 +55,98 @@ function ServicesPage() {
   };
 
   return (
-    <div className="p-4 space-y-8">
-      <h1 className="text-2xl font-bold">Advice Services</h1>
-
-      {/* --- ID SECTION --- */}
-      <div className="border p-4 rounded shadow-sm bg-white">
-        <h2 className="font-bold mb-2">Search by ID</h2>
-        {/* ✅ THE FIX: "SearchInput" Component 
-           We isolate the input state so we can reset it with a 'key'
-        */}
-        <SearchInput
-          key={adviceId || "empty-id"} // If URL changes, this component re-mounts!
-          initialValue={adviceId || ""}
-          placeholder="ID (e.g. 42)"
-          onSearch={(val) => updateSearch({ adviceId: val })}
-        />
-        
-        {idQuery.isLoading && <p className="mt-2 text-gray-500">Loading...</p>}
-        {idQuery.data && (
-          <div className="mt-2 p-2 bg-blue-50 border-l-4 border-blue-500">
-            "{idQuery.data.slip.advice}"
-          </div>
-        )}
+    <div className="container mx-auto p-8 space-y-8 max-w-4xl">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Advice Services</h1>
+        <p className="text-muted-foreground">
+          Powered by TanStack Router & Shadcn UI
+        </p>
       </div>
 
-      {/* --- MOOD SECTION --- */}
-      <div className="border p-4 rounded shadow-sm bg-white">
-        <h2 className="font-bold mb-2">Search by Mood</h2>
-        <SearchInput
-          key={mood || "empty-mood"} // If URL changes, this component re-mounts!
-          initialValue={mood || ""}
-          placeholder="Mood (e.g. love)"
-          onSearch={(val) => updateSearch({ mood: val })}
-          buttonColor="bg-green-600"
-        />
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* --- CARD 1: ID Search --- */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Get Specific Advice</CardTitle>
+            <CardDescription>Enter an ID number (e.g., 42)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <SearchInput
+              key={adviceId || "id-reset"} // Key resets component on URL change
+              initialValue={adviceId || ""}
+              placeholder="Advice ID..."
+              onSearch={(val) => updateSearch({ adviceId: val })}
+              className="bg-gray-400 cursor-pointer"
+            />
 
-        {/* Results */}
-        {moodQuery.isLoading && <p className="mt-2 text-gray-500">Searching...</p>}
-        {moodQuery.data && (
-          <ul className="mt-2 space-y-2">
-            {moodQuery.data.slips.map((slip) => (
-              <li key={slip.id} className="p-2 bg-green-50 border-b">
-                "{slip.advice}"
-              </li>
-            ))}
-          </ul>
-        )}
+            {/* Results Area */}
+            {idQuery.isLoading && (
+              <p className="text-sm text-muted-foreground animate-pulse">
+                Fetching advice...
+              </p>
+            )}
+            {idQuery.data && (
+              <div className="rounded-md bg-primary/10 p-4 text-primary font-medium border border-primary/20">
+                "{idQuery.data.slip.advice}"
+              </div>
+            )}
+            {idQuery.isError && (
+              <p className="text-sm text-destructive font-medium">
+                Error: {idQuery.error.message}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* --- CARD 2: Mood Search --- */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Search by Mood</CardTitle>
+            <CardDescription>
+              Enter a topic (e.g., spiders, life)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <SearchInput
+              key={mood || "mood-reset"}
+              initialValue={mood || ""}
+              placeholder="Mood..."
+              buttonLabel="Find"
+              onSearch={(val) => updateSearch({ mood: val })}
+              className="bg-gray-600 cursor-pointer"
+            />
+
+            {/* Results Area */}
+            {moodQuery.isLoading && (
+              <p className="text-sm text-muted-foreground animate-pulse">
+                Searching...
+              </p>
+            )}
+
+            {moodQuery.data && (
+              <div className="max-h-[200px] overflow-y-auto space-y-2 pr-2">
+                <p className="text-xs text-muted-foreground">
+                  Found {moodQuery.data.total_results} results
+                </p>
+                {moodQuery.data.slips.map((slip) => (
+                  <div
+                    key={slip.id}
+                    className="rounded-md bg-muted p-3 text-sm"
+                  >
+                    "{slip.advice}"
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {moodQuery.isError && (
+              <p className="text-sm text-destructive font-medium">
+                {moodQuery.error.message}
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
-    </div>
-  );
-}
-
-// 5. HELPER COMPONENT (Keeps the main code clean)
-// This handles the temporary "typing" state
-function SearchInput({ 
-  initialValue, 
-  onSearch, 
-  placeholder, 
-  buttonColor = "bg-blue-600" 
-}: { 
-  initialValue: string; 
-  onSearch: (val: string) => void; 
-  placeholder: string;
-  buttonColor?: string;
-}) {
-  const [value, setValue] = useState(initialValue);
-
-  return (
-    <div className="flex gap-2">
-      <input
-        className="border p-2 rounded"
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-      />
-      <button
-        className={`${buttonColor} text-white px-4 py-2 rounded`}
-        onClick={() => onSearch(value)}
-      >
-        Search
-      </button>
     </div>
   );
 }
