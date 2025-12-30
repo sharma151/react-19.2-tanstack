@@ -124,7 +124,7 @@ function ServicesPage() {
             )}
 
             {moodQuery.data && (
-              <div className="max-h-[200px] overflow-y-auto space-y-2 pr-2">
+              <div className="max-h-50 overflow-y-auto space-y-2 pr-2">
                 <p className="text-xs text-muted-foreground">
                   Found {moodQuery.data.total_results} results
                 </p>
